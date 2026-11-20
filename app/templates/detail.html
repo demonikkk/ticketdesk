@@ -1,0 +1,30 @@
+{% extends "base.html" %}{% block content %}
+<h2>#{{ t.id }} {{ t.title }}</h2>
+<p>
+ <span class="badge">{{ t.status }}</span> Priority: {{ t.priority }} ·
+ By {{ t.creator.username }} · {{ t.created_at.strftime('%d %b %Y %H:%M') }}
+</p>
+<p>{{ t.description }}</p>
+
+{% if user.role == 'admin' %}
+<form method="post" action="/tickets/{{ t.id }}/status">
+ <select name="status" class="inline">
+  {% for s in statuses %}<option {{ 'selected' if s == t.status }}>{{ s }}</option>{% endfor %}
+ </select>
+ <button>Update status</button>
+</form>
+{% else %}
+<p><em>Only support staff can change the ticket status.</em></p>
+{% endif %}
+
+<h3>Attachments</h3>
+<ul>
+ {% for a in t.attachments %}
+ <li><a href="/attachments/{{ a.id }}">{{ a.filename }}</a></li>
+ {% else %}<li>None</li>{% endfor %}
+</ul>
+<form method="post" action="/tickets/{{ t.id }}/attachments" enctype="multipart/form-data">
+ <input type="file" name="file" required>
+ <button>Upload</button>
+</form>
+{% endblock %}

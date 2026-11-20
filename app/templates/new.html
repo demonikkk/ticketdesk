@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% block content %}
+<h2>New ticket</h2>
+<form method="post" enctype="multipart/form-data">
+ <input name="title" placeholder="Title" maxlength="120" required>
+ <textarea name="description" placeholder="Describe the issue" rows="5"></textarea>
+ <select name="priority">
+  {% for p in priorities %}<option {{ 'selected' if p == 'Medium' }}>{{ p }}</option>{% endfor %}
+ </select>
+ <label>Attachment (png, jpg, pdf, txt; optional)</label>
+ <input type="file" name="file">
+ <button>Create ticket</button>
+</form>
+{% endblock %}

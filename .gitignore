@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+.env
+test.db
+.pytest_cache/
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+uploads/
+commands_to_run

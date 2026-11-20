@@ -1,0 +1,11 @@
+{% extends "base.html" %}{% block content %}
+<h2>Dashboard</h2>
+<div class="cards">
+ <div class="card">Total<b>{{ total }}</b></div>
+ {% for s, n in by_status.items() %}<div class="card">{{ s }}<b>{{ n }}</b></div>{% endfor %}
+</div>
+<h3>By priority</h3>
+<div class="cards">
+ {% for p, n in by_priority.items() %}<div class="card">{{ p }}<b>{{ n }}</b></div>{% endfor %}
+</div>
+{% endblock %}
