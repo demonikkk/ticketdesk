@@ -1,30 +1,363 @@
-{% extends "base.html" %}{% block content %}
-<h2>#{{ t.id }} {{ t.title }}</h2>
-<p>
- <span class="badge">{{ t.status }}</span> Priority: {{ t.priority }} ·
- By {{ t.creator.username }} · {{ t.created_at.strftime('%d %b %Y %H:%M') }}
-</p>
-<p>{{ t.description }}</p>
 
-{% if user.role == 'admin' %}
-<form method="post" action="/tickets/{{ t.id }}/status">
- <select name="status" class="inline">
-  {% for s in statuses %}<option {{ 'selected' if s == t.status }}>{{ s }}</option>{% endfor %}
- </select>
- <button>Update status</button>
-</form>
-{% else %}
-<p><em>Only support staff can change the ticket status.</em></p>
-{% endif %}
+{% extends "base.html" %}
 
-<h3>Attachments</h3>
-<ul>
- {% for a in t.attachments %}
- <li><a href="/attachments/{{ a.id }}">{{ a.filename }}</a></li>
- {% else %}<li>None</li>{% endfor %}
-</ul>
-<form method="post" action="/tickets/{{ t.id }}/attachments" enctype="multipart/form-data">
- <input type="file" name="file" required>
- <button>Upload</button>
-</form>
+{% block content %}
+
+<style>
+    .ticket-page {
+        max-width: 1050px;
+        margin: 35px auto;
+        padding: 20px;
+        color: #1e293b;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 22px;
+        color: #6366f1;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .back-link:hover {
+        color: #4338ca;
+    }
+
+    .ticket-header {
+        background: linear-gradient(135deg, #4338ca, #6366f1);
+        color: white;
+        padding: 30px;
+        border-radius: 18px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.18);
+    }
+
+    .ticket-header h2 {
+        font-size: 26px;
+        margin: 0 0 18px;
+        font-weight: 750;
+        line-height: 1.4;
+    }
+
+    .ticket-id {
+        font-size: 13px;
+        opacity: 0.8;
+        margin-bottom: 8px;
+    }
+
+    .ticket-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        font-size: 13px;
+        color: #e0e7ff;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 6px 13px;
+        border-radius: 20px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: capitalize;
+    }
+
+    .ticket-grid {
+        display: grid;
+        grid-template-columns: 1.5fr 1fr;
+        gap: 22px;
+    }
+
+    .panel {
+        background: white;
+        border: 1px solid #e8edf5;
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 4px 15px rgba(15,23,42,0.04);
+        margin-bottom: 22px;
+    }
+
+    .panel h3 {
+        font-size: 18px;
+        margin: 0 0 20px;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .description {
+        color: #475569;
+        font-size: 15px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .priority-label {
+        display: inline-block;
+        padding: 5px 12px;
+        background: #fff7ed;
+        color: #c2410c;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .attachment-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .attachment-list li {
+        padding: 13px 15px;
+        margin-bottom: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: #f8fafc;
+        transition: 0.2s;
+    }
+
+    .attachment-list li:hover {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+    }
+
+    .attachment-list a {
+        color: #4f46e5;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .attachment-list a:hover {
+        text-decoration: underline;
+    }
+
+    .empty-state {
+        color: #94a3b8;
+        font-size: 14px;
+        padding: 15px 0;
+    }
+
+    .ticket-form {
+        display: flex;
+        flex-direction: column;
+        gap: 13px;
+    }
+
+    .ticket-form select,
+    .ticket-form input[type="file"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 9px;
+        background: #fff;
+        color: #334155;
+        font-size: 14px;
+        box-sizing: border-box;
+    }
+
+    .ticket-form select:focus,
+    .ticket-form input:focus {
+        outline: none;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+
+    .action-btn {
+        padding: 12px 18px;
+        border: none;
+        border-radius: 9px;
+        background: #4f46e5;
+        color: white;
+        font-size: 14px;
+        font-weight: 650;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .action-btn:hover {
+        background: #3730a3;
+        transform: translateY(-1px);
+    }
+
+    .upload-btn {
+        background: #0f766e;
+    }
+
+    .upload-btn:hover {
+        background: #115e59;
+    }
+
+    .permission-note {
+        background: #fffbeb;
+        border: 1px solid #fde68a;
+        padding: 13px;
+        border-radius: 10px;
+        color: #92400e;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    @media (max-width: 700px) {
+        .ticket-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .ticket-header {
+            padding: 22px;
+        }
+
+        .ticket-header h2 {
+            font-size: 21px;
+        }
+
+        .ticket-page {
+            padding: 12px;
+            margin: 15px auto;
+        }
+    }
+</style>
+
+<div class="ticket-page">
+
+    <a href="/tickets" class="back-link">← Back to Tickets</a>
+
+    <!-- Ticket Header -->
+    <div class="ticket-header">
+
+        <div class="ticket-id">TICKET #{{ t.id }}</div>
+
+        <h2>{{ t.title }}</h2>
+
+        <div class="ticket-meta">
+            <span class="badge">{{ t.status }}</span>
+            <span>Priority: {{ t.priority }}</span>
+            <span>•</span>
+            <span>Created by {{ t.creator.username }}</span>
+            <span>•</span>
+            <span>{{ t.created_at.strftime('%d %b %Y %H:%M') }}</span>
+        </div>
+
+    </div>
+
+    <div class="ticket-grid">
+
+        <!-- Left Column -->
+        <div>
+
+            <!-- Description -->
+            <div class="panel">
+                <h3>Ticket Description</h3>
+                <div class="description">{{ t.description }}</div>
+            </div>
+
+            <!-- Attachments -->
+            <div class="panel">
+                <h3>📎 Attachments</h3>
+
+                <ul class="attachment-list">
+                    {% for a in t.attachments %}
+                    <li>
+                        <a href="/attachments/{{ a.id }}">
+                            📄 {{ a.filename }}
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="empty-state">
+                        No attachments have been uploaded yet.
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <hr style="border:0; border-top:1px solid #e2e8f0; margin:22px 0;">
+
+                <h3>Upload Attachment</h3>
+
+                <form method="post"
+                      action="/tickets/{{ t.id }}/attachments"
+                      enctype="multipart/form-data"
+                      class="ticket-form">
+
+                    <input type="file" name="file" required>
+
+                    <button type="submit" class="action-btn upload-btn">
+                        ↑ Upload File
+                    </button>
+
+                </form>
+            </div>
+
+        </div>
+
+        <!-- Right Column -->
+        <div>
+
+            <!-- Ticket Information -->
+            <div class="panel">
+                <h3>Ticket Information</h3>
+
+                <p style="color:#64748b; font-size:13px;">Ticket ID</p>
+                <strong>#{{ t.id }}</strong>
+
+                <p style="color:#64748b; font-size:13px; margin-top:20px;">Current Status</p>
+                <span class="priority-label">{{ t.status }}</span>
+
+                <p style="color:#64748b; font-size:13px; margin-top:20px;">Priority Level</p>
+                <span class="priority-label">{{ t.priority }}</span>
+
+                <p style="color:#64748b; font-size:13px; margin-top:20px;">Created By</p>
+                <strong>{{ t.creator.username }}</strong>
+
+            </div>
+
+            <!-- Status Management -->
+            <div class="panel">
+                <h3>⚙ Manage Ticket</h3>
+
+                {% if user.role == 'admin' %}
+
+                <form method="post"
+                      action="/tickets/{{ t.id }}/status"
+                      class="ticket-form">
+
+                    <label style="font-size:13px; font-weight:600; color:#475569;">
+                        Update Ticket Status
+                    </label>
+
+                    <select name="status" class="inline">
+                        {% for s in statuses %}
+                        <option value="{{ s }}" {% if s == t.status %}selected{% endif %}>
+                            {{ s }}
+                        </option>
+                        {% endfor %}
+                    </select>
+
+                    <button type="submit" class="action-btn">
+                        Update Status
+                    </button>
+
+                </form>
+
+                {% else %}
+
+                <div class="permission-note">
+                    🔒 Only support staff can change the ticket status.
+                </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
 {% endblock %}

@@ -1,13 +1,380 @@
-{% extends "base.html" %}{% block content %}
-<h2>New ticket</h2>
-<form method="post" enctype="multipart/form-data">
- <input name="title" placeholder="Title" maxlength="120" required>
- <textarea name="description" placeholder="Describe the issue" rows="5"></textarea>
- <select name="priority">
-  {% for p in priorities %}<option {{ 'selected' if p == 'Medium' }}>{{ p }}</option>{% endfor %}
- </select>
- <label>Attachment (png, jpg, pdf, txt; optional)</label>
- <input type="file" name="file">
- <button>Create ticket</button>
-</form>
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+    .create-ticket-page {
+        max-width: 850px;
+        margin: 35px auto;
+        padding: 20px;
+        color: #1e293b;
+    }
+
+    .back-link {
+        display: inline-block;
+        margin-bottom: 22px;
+        color: #6366f1;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .back-link:hover {
+        color: #3730a3;
+    }
+
+    .form-header {
+        background: linear-gradient(135deg, #4338ca, #6366f1);
+        padding: 30px;
+        border-radius: 18px;
+        color: white;
+        margin-bottom: 25px;
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.18);
+    }
+
+    .form-header h2 {
+        font-size: 27px;
+        font-weight: 750;
+        margin: 0 0 10px;
+    }
+
+    .form-header p {
+        font-size: 14px;
+        color: #e0e7ff;
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .form-card {
+        background: white;
+        padding: 32px;
+        border-radius: 17px;
+        border: 1px solid #e8edf5;
+        box-shadow: 0 4px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    .form-section-title {
+        font-size: 17px;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 22px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .form-group {
+        margin-bottom: 23px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 13px;
+        font-weight: 650;
+        color: #334155;
+        margin-bottom: 9px;
+    }
+
+    .required {
+        color: #ef4444;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 13px 15px;
+        box-sizing: border-box;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #f8fafc;
+        color: #1e293b;
+        font-size: 14px;
+        outline: none;
+        transition: 0.2s;
+        font-family: inherit;
+    }
+
+    .form-control:focus {
+        border-color: #6366f1;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    }
+
+    .form-control::placeholder {
+        color: #94a3b8;
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 130px;
+        line-height: 1.7;
+    }
+
+    select.form-control {
+        cursor: pointer;
+    }
+
+    .field-hint {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-top: 7px;
+    }
+
+    .upload-area {
+        border: 2px dashed #cbd5e1;
+        border-radius: 12px;
+        padding: 25px 18px;
+        text-align: center;
+        background: #f8fafc;
+        transition: 0.2s;
+        cursor: pointer;
+    }
+
+    .upload-area:hover {
+        border-color: #6366f1;
+        background: #eef2ff;
+    }
+
+    .upload-icon {
+        font-size: 30px;
+        margin-bottom: 10px;
+    }
+
+    .upload-area p {
+        color: #475569;
+        font-size: 13px;
+        margin: 5px 0;
+        font-weight: 600;
+    }
+
+    .upload-area small {
+        color: #94a3b8;
+        font-size: 11px;
+    }
+
+    .file-input {
+        display: none;
+    }
+
+    .file-name {
+        display: block;
+        margin-top: 12px;
+        font-size: 12px;
+        color: #4f46e5;
+        font-weight: 600;
+        overflow-wrap: anywhere;
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        margin-top: 30px;
+        padding-top: 22px;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .btn {
+        padding: 12px 22px;
+        border-radius: 9px;
+        font-size: 14px;
+        font-weight: 650;
+        cursor: pointer;
+        text-decoration: none;
+        transition: 0.2s;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #4338ca, #6366f1);
+        color: white;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 16px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+    }
+
+    .btn-secondary:hover {
+        background: #e2e8f0;
+    }
+
+    @media (max-width: 600px) {
+        .create-ticket-page {
+            padding: 12px;
+            margin: 15px auto;
+        }
+
+        .form-header {
+            padding: 22px;
+        }
+
+        .form-header h2 {
+            font-size: 23px;
+        }
+
+        .form-card {
+            padding: 22px 17px;
+        }
+
+        .form-actions {
+            flex-direction: column-reverse;
+        }
+
+        .btn {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    }
+</style>
+
+<div class="create-ticket-page">
+
+    <a href="/tickets" class="back-link">
+        ← Back to Tickets
+    </a>
+
+    <!-- Page Header -->
+    <div class="form-header">
+        <h2>Create New Ticket</h2>
+        <p>
+            Submit a new support request. Provide the details below
+            so our team can help resolve your issue.
+        </p>
+    </div>
+
+    <!-- Ticket Form -->
+    <div class="form-card">
+
+        <h3 class="form-section-title">
+            Ticket Information
+        </h3>
+
+        <form method="post" enctype="multipart/form-data">
+
+            <!-- Title -->
+            <div class="form-group">
+                <label for="title">
+                    Ticket Title <span class="required">*</span>
+                </label>
+
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    class="form-control"
+                    placeholder="Enter a short and descriptive title"
+                    maxlength="120"
+                    required
+                >
+
+                <div class="field-hint">
+                    Maximum 120 characters.
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="form-group">
+                <label for="description">
+                    Issue Description
+                </label>
+
+                <textarea
+                    id="description"
+                    name="description"
+                    class="form-control"
+                    placeholder="Describe your issue in detail. Include any relevant information that can help resolve it."
+                    rows="5"
+                ></textarea>
+
+                <div class="field-hint">
+                    Explain the issue, expected behavior, and any steps to reproduce it.
+                </div>
+            </div>
+
+            <!-- Priority -->
+            <div class="form-group">
+                <label for="priority">
+                    Ticket Priority
+                </label>
+
+                <select
+                    name="priority"
+                    id="priority"
+                    class="form-control"
+                >
+                    {% for p in priorities %}
+                    <option value="{{ p }}" {% if p == 'Medium' %}selected{% endif %}>
+                        {{ p }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <div class="field-hint">
+                    Select the priority level based on the urgency of your issue.
+                </div>
+            </div>
+
+            <!-- Attachment -->
+            <div class="form-group">
+                <label>
+                    Attachment <span style="color:#94a3b8;">(Optional)</span>
+                </label>
+
+                <label for="file" class="upload-area">
+                    <div class="upload-icon">📁</div>
+                    <p>Click here to upload a file</p>
+                    <small>Supported formats: PNG, JPG, PDF, TXT</small>
+                    <small> · Upload an optional attachment</small>
+                    <span class="file-name" id="fileName"></span>
+                </label>
+
+                <input
+                    type="file"
+                    id="file"
+                    name="file"
+                    class="file-input"
+                    accept=".png,.jpg,.jpeg,.pdf,.txt"
+                >
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions">
+
+                <a href="/tickets" class="btn btn-secondary">
+                    Cancel
+                </a>
+
+                <button type="submit" class="btn btn-primary">
+                    Create Ticket →
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script>
+    document.getElementById("file").addEventListener("change", function () {
+        const fileName = document.getElementById("fileName");
+
+        if (this.files.length > 0) {
+            fileName.textContent = "✓ Selected: " + this.files[0].name;
+        } else {
+            fileName.textContent = "";
+        }
+    });
+</script>
+
 {% endblock %}
