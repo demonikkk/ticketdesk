@@ -1,0 +1,42 @@
+#!/bin/bash
+set -euxo pipefail
+
+dnf install -y docker jq
+systemctl enable --now docker
+
+cat > /usr/local/bin/deploy.sh <<'SCRIPT'
+#!/bin/bash
+# Pull the latest image and (re)start the app. Safe to run any time.
+set -euo pipefail
+REGION="${region}"
+
+DB_JSON=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "${db_secret_arn}" --query SecretString --output text)
+APP_JSON=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "${app_secret_arn}" --query SecretString --output text)
+
+DATABASE_URL=$(echo "$DB_JSON" | jq -r .database_url)
+SECRET_KEY=$(echo "$APP_JSON" | jq -r .secret_key)
+ADMIN_PASSWORD=$(echo "$APP_JSON" | jq -r .admin_password)
+
+aws ecr get-login-password --region "$REGION" | docker login --username AWS --password-stdin "${ecr_registry}"
+docker pull "${image}:latest"
+docker rm -f ticketdesk 2>/dev/null || true
+
+docker run -d --name ticketdesk --restart unless-stopped -p 80:8000 \
+  -e DATABASE_URL="$DATABASE_URL" \
+  -e SECRET_KEY="$SECRET_KEY" \
+  -e ADMIN_USERNAME=admin \
+  -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  -e STORAGE_BACKEND=s3 \
+  -e S3_BUCKET="${bucket}" \
+  -e AWS_REGION="$REGION" \
+  --log-driver awslogs \
+  --log-opt awslogs-region="$REGION" \
+  --log-opt awslogs-group="${log_group}" \
+  --log-opt tag=ticketdesk \
+  "${image}:latest"
+SCRIPT
+
+chmod +x /usr/local/bin/deploy.sh
+
+# The image may not be in ECR yet on first boot; that is fine.
+/usr/local/bin/deploy.sh || echo "No image yet. Push one to ECR and re-run deploy.sh"
