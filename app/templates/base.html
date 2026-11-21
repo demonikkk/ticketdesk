@@ -189,20 +189,19 @@
 
 <body>
 
+{% if request.endpoint not in ['login', 'register'] %}
 <nav>
     <a href="/tickets"><strong>TicketDesk</strong></a>
-
     {% if user %}
         <a href="/tickets">Tickets</a>
         <a href="/tickets/new">New ticket</a>
         <a href="/dashboard">Dashboard</a>
-
         <span class="spacer"></span>
-
         <span>{{ user.username }}</span>
         <a href="/logout">Logout</a>
     {% endif %}
 </nav>
+{% endif %}
 
 {% block content %}{% endblock %}
 
