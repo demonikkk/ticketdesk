@@ -12,7 +12,7 @@ variable "vpc_cidr" {
   type    = string
   default = "10.0.0.0/16"
 }
-variable "github_repo" {
+variable "github_subject" {
   type        = string
-  description = "GitHub repository allowed to deploy, as owner/repo"
+  description = "repo:demonikkk@113007497/ticketdesk@1465964985:ref:refs/heads/main"
 }

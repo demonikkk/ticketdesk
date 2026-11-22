@@ -41,7 +41,7 @@ module "cicd" {
   source             = "./modules/cicd"
   project            = var.project
   region             = var.region
-  github_repo        = var.github_repo
+  github_subject     = var.github_subject
   ecr_repository_arn = module.ecr.repository_arn
   instance_id        = module.ec2.instance_id
 }
