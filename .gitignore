@@ -10,4 +10,5 @@ test.db
 *.tfvars
 uploads/
 commands_to_run
-modules/lambda/handler.zip*.log
+modules/lambda/handler.zip
+*.log
