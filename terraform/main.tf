@@ -37,3 +37,11 @@ module "lambda" {
   bucket_name = module.s3.bucket_name
   bucket_arn  = module.s3.bucket_arn
 }
+module "cicd" {
+  source             = "./modules/cicd"
+  project            = var.project
+  region             = var.region
+  github_repo        = var.github_repo
+  ecr_repository_arn = module.ecr.repository_arn
+  instance_id        = module.ec2.instance_id
+}

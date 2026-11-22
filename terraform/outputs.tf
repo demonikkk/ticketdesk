@@ -49,3 +49,7 @@ output "lambda_function" {
 output "lambda_log_group" {
   value = module.lambda.log_group
 }
+
+output "deploy_role_arn" {
+  value = module.cicd.role_arn
+}
